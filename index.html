@@ -192,6 +192,13 @@
     </div>
 </div>
 
+<div id="bj-warning-popup" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); border-radius: 20px; text-align: center; z-index: 9000; width: 280px; box-shadow: 0 0 100px black; padding: 25px; background: var(--paper); border: 5px solid var(--wood); color: var(--wood);">
+    <div style="font-size: 2.5rem; margin-bottom: 10px;">⚠️</div>
+    <h3 style="margin: 0;">¡ATENCIÓN!</h3>
+    <p style="font-size: 0.9rem; font-weight: bold; margin: 15px 0;">Solo puedes activar esta habilidad si tienes 1 o 2 dinamitas en la reserva.</p>
+    <button class="btn-main" onclick="document.getElementById('bj-warning-popup').style.display='none'">ENTENDIDO</button>
+</div>
+
 <div id="char-modal" class="modal" onclick="this.style.display='none'">
     <div style="background: var(--paper); padding: 20px; border-radius: 15px; text-align:center; max-width: 90%; border: 4px solid var(--wood);">
         <h2 id="modal-name" style="margin-top:0;"></h2>
@@ -229,7 +236,9 @@
 <button id="lucky-btn" onclick="luckyRoll()" style="background: var(--gold); color: #000; border: none; padding: 5px 10px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 0.8rem; margin-left: 10px; display: none;">
         LUCKY ROLL (1)
     </button>
-
+<button id="blackjack-btn" onclick="blackjackPower()" style="background: #333; color: #fff; border: 1px solid var(--gold); padding: 5px 10px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 0.8rem; margin-left: 10px; display: none;">
+    BLACK JACK (DINAMITA)
+</button>
 
 
 </div>
@@ -317,6 +326,13 @@
     if (luckyExists) {
         document.getElementById('lucky-btn').style.display = 'inline-block';
     }
+
+// Al final de startGame(), debajo de la lógica de Lucky Duke:
+const bjExists = [...document.querySelectorAll('.player-card')].some(card => card.dataset.charName === 'Black Jack');
+if (bjExists) {
+    document.getElementById('blackjack-btn').style.display = 'inline-block';
+}
+
     }
 
     function modStat(id, type, val) {
@@ -411,16 +427,20 @@
 
 
 reserved.forEach((f, i) => {
-    const d = document.createElement('div'); 
-    d.className = 'die' + (f === '💣' ? ' locked' : ' clickable-res'); // Añadimos una clase para el cursor
+// MODIFICADO: Si es dinamita, solo se bloquea si Blackjack no está activo O si ya hay 3 o más
+    const isLocked = (f === '💣' && !blackjackActive);
+
+const d = document.createElement('div'); 
+    d.className = 'die' + (isLocked ? ' locked' : ' clickable-res');
     d.innerHTML = `<img src="images/${diceConfig[f]}">`;
     
-    // NUEVO: Si NO es dinamita, al hacer clic vuelve a la zona de lanzamiento
-    if (f !== '💣') {
+// Si no está bloqueado (porque es otro dado o porque Blackjack lo activó), se puede clickar
+    if (!isLocked) {
         d.onclick = () => {
-            activeDice.push(reserved[i]); // Sube a activos
-            reserved.splice(i, 1);        // Quita de reserva
-            updateDiceDisplay();          // Refresca visualmente
+            if (f === '💣') blackjackActive = false; // Se desactiva al subir la dinamita
+            activeDice.push(reserved[i]);
+            reserved.splice(i, 1);
+            updateDiceDisplay();
         };
     }
     resz.appendChild(d);
@@ -439,20 +459,36 @@ reserved.forEach((f, i) => {
         document.querySelectorAll('[id^="sh-btn-"]').forEach(b => b.remove());
     }
 
-    function endTurn() {
-        rollCount = 3; reserved = []; activeDice = [];
+
+
+function endTurn() {
+        rollCount = 3; 
+        reserved = []; 
+        activeDice = [];
+        blackjackActive = false; 
+        luckyUsed = false;
+
         document.getElementById('roll-btn').disabled = false;
         document.getElementById('game-msg').innerText = "";
-// RESET LUCKY DUKE
-    luckyUsed = false;
-    const lBtn = document.getElementById('lucky-btn');
-    if (lBtn) {
-        lBtn.style.opacity = "1";
-        lBtn.innerText = "LUCKY ROLL (1)";
+
+        // Reset Visual Lucky Duke
+        const lBtn = document.getElementById('lucky-btn');
+        if (lBtn) {
+            lBtn.style.opacity = "1";
+            lBtn.innerText = "LUCKY ROLL (1)";
+        }
+
+        // Reset Visual Black Jack
+        const bjBtn = document.getElementById('blackjack-btn');
+        if (bjBtn) {
+            bjBtn.style.background = "#333";
+            bjBtn.style.color = "#fff";
+        }
+
+        updateDiceDisplay();
     }
-    
-    updateDiceDisplay();
-}
+
+
 
     // MODIFICADO: ELIMINAR JUGADOR CON POPUP PERSONALIZADO
     function eliminatePlayer(id) {
@@ -503,6 +539,7 @@ function confirmReset() {
     // 1. Ocultar el tablero y el popup
     document.getElementById('board-container').style.display = 'none';
     document.getElementById('reset-popup').style.display = 'none';
+document.getElementById('bj-warning-popup').style.display = 'none';
     
     // 2. Mostrar la pantalla de selección inicial
     document.getElementById('setup-screen').style.display = 'flex';
@@ -554,6 +591,23 @@ function luckyRoll() {
             playSound('snd-dinamita');
             document.getElementById('boom-popup').style.display = 'block';
         }
+    }
+}
+
+let blackjackActive = false;
+
+function blackjackPower() {
+    const totalBombs = reserved.filter(x => x === '💣').length;
+    if (totalBombs > 0 && totalBombs < 3) {
+        blackjackActive = true;
+        updateDiceDisplay();
+        playSound('snd-click');
+        // CORREGIDO: Añadidas comillas a var(--gold)
+        document.getElementById('blackjack-btn').style.background = "var(--gold)";
+        document.getElementById('blackjack-btn').style.color = "#000";
+    } else {
+playSound('snd-click');
+        document.getElementById('bj-warning-popup').style.display = 'block';
     }
 }
 
