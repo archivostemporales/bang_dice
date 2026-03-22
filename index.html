@@ -234,7 +234,7 @@
     <a href="images/bang_dice_reglas.pdf" target="_blank" style="color: var(--gold); text-decoration: none; font-weight: bold; font-size: 0.8rem; border: 1px solid var(--gold); padding: 5px 15px; border-radius: 5px;">REGLAS</a>
 
 <button id="lucky-btn" onclick="luckyRoll()" style="background: var(--gold); color: #000; border: none; padding: 5px 10px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 0.8rem; margin-left: 10px; display: none;">
-        LUCKY ROLL (1)
+        LUCKY DUKE (EXTRA)
     </button>
 <button id="blackjack-btn" onclick="blackjackPower()" style="background: #333; color: #fff; border: 1px solid var(--gold); padding: 5px 10px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 0.8rem; margin-left: 10px; display: none;">
     BLACK JACK (DINAMITA)
@@ -475,7 +475,7 @@ function endTurn() {
         const lBtn = document.getElementById('lucky-btn');
         if (lBtn) {
             lBtn.style.opacity = "1";
-            lBtn.innerText = "LUCKY ROLL (1)";
+            lBtn.innerText = "LUCKY DUKE (EXTRA)";
         }
 
         // Reset Visual Black Jack
@@ -580,7 +580,7 @@ function luckyRoll() {
         
         luckyUsed = true;
         document.getElementById('lucky-btn').style.opacity = "0.5";
-        document.getElementById('lucky-btn').innerText = "LUCKY USADO";
+        document.getElementById('lucky-btn').innerText = "HABILIDAD USADA";
         
         updateDiceDisplay();
         
